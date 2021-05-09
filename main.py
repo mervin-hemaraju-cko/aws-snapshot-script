@@ -60,7 +60,9 @@ def retrieve_arguments(argv):
 
 
 def logger_config():
+    # Call the global logger variable
     global logger
+
     # log folder path
     LOG_FOLDER = os.path.join(os.path.dirname(__file__), "logs/")
 
@@ -68,46 +70,60 @@ def logger_config():
     if os.path.exists(LOG_FOLDER) is False:
         os.mkdir(LOG_FOLDER)
 
+    # Assign to logger variable
     logger = Logger.create_logger(
         (LOG_FOLDER + datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + ".log")
     )
 
 
 def load_tasks(ticket):
+
+    # Build headers for FreshService call
     headers = Const.require_headers_template(
         os.environ['ENV_FRESH_SERVICE_KEY_API_B64'])
 
+    # Get tasks from API FreshService
     response = requests.get(Const.VALUE_URL_BASE_FRESH_SERVICE_TASKS.format(
         os.environ['ENV_FRESH_SERVICE_URL'], ticket), headers=headers)
 
+    # Checks if GET call is successfull
     if response.status_code != 200:
         raise requests.exceptions.HTTPError(
             Const.EXCEPTION_HTTP_ERROR_FRESHSERVICE)
 
-    return Task.loads(json.loads(response.content)["tasks"])
+    # Format and load tasks
+    tasks = Task.loads(json.loads(response.content)["tasks"])
+
+    # If tasks is empty, raise an exception
+    if not tasks:
+        raise requests.exceptions.HTTPError(Const.EXCEPTION_TASKS_EMPTY)
+
+    # Return tasks
+    return tasks
 
 
 def create_ec2_client():
-    ec2 = boto3.client(
-        'ec2',
-        region_name='eu-west-1',
-        aws_access_key_id=os.environ['ENV_AWS_ACCESS_KEY'],
-        aws_secret_access_key=os.environ['ENV_AWS_SECRET_ACCESS_KEY']
-    )
 
+    # Instantiate BOTO client for EC2
+    ec2 = boto3.client('ec2')
+
+    # Return the client
     return ec2
 
 
 def query_instance(client, filters):
 
+    # Filter instances
     response = client.describe_instances(Filters=filters)
 
+    # Retrieve instances
     for r in response['Reservations']:
 
         for i in r['Instances']:
 
             return Instance.load(i)
 
+    # Raise exception if an instance not found
     raise Exception(Const.EXCEPTION_NOT_FOUND_INSTANCE.format(
         filters[0]['Values'][0]))
 
@@ -146,6 +162,7 @@ def create_snapshots(client, snapshot_requests):
 
 def post_to_slack(message, blocks=None):
 
+    # Make API Call to Slack API
     response = requests.post('https://slack.com/api/chat.postMessage', {
         'token': os.environ["ENV_SLACK_KEY_API"],
         'channel': os.environ["ENV_SLACK_CHANNEL"],
@@ -155,6 +172,7 @@ def post_to_slack(message, blocks=None):
         'blocks': json.dumps(blocks) if blocks else None
     }).json()
 
+    # Check if messages posted successfully
     if response['ok'] != True:
         raise Exception(Const.EXCEPTION_MESSAGE_ERROR_SLACK)
 

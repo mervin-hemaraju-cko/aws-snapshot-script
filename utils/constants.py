@@ -22,6 +22,7 @@ EXCEPTION_OPTIONS_GENERAL = "{}. Use option -h for help"
 EXCEPTION_OPTIONS_MISSING_ARGUMENTS = "Missing arguments"
 EXCEPTION_OPTIONS_WRONG_ARGUMENTS = "Wrong arguments passed"
 EXCEPTION_OPTIONS_HELP = "Options available: -t <ticket> -a <agent>"
+EXCEPTION_TASKS_EMPTY = "You don't have any tasks for snapshots"
 
 
 # Dictionary values

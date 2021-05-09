@@ -2,6 +2,13 @@ import pytest
 import requests
 import main as Main
 
+###############################
+####### Important Note ########
+###############################
+## Tests should be performed ##
+## in Playground Environment ##
+###############################
+###############################
 
 class TestHelper:
 
@@ -21,22 +28,39 @@ class TestHelper:
 
     def test_get_tasks_size(self):
         # Arrange
-        expected_result = 3
+        ticket = "7303"
+        expected_result = 2
 
         # Act
-        result = Main.load_tasks()
+        result = Main.load_tasks(ticket)
 
         # Assert
         assert expected_result == len(result)
 
     def test_get_tasks_error(self):
         # Arrange
+        ticket = "asdasd"
         expected_result = "An HTTP error occured while fetching tickets from FreshService"
 
         # Act
         try:
-            Main.ticket = "asdasd" # Change ticket to something unknown
-            Main.load_tasks()
+            Main.load_tasks(ticket)
+            result = "Failed"
+        except requests.exceptions.HTTPError as e:
+            result = str(e)
+            pass
+
+        # Assert
+        assert expected_result == result
+
+    def test_get_tasks_empty(self):
+        # Arrange
+        ticket = "72"
+        expected_result = "You don't have any tasks for snapshots"
+
+        # Act
+        try:
+            Main.load_tasks(ticket)
             result = "Failed"
         except requests.exceptions.HTTPError as e:
             result = str(e)
@@ -50,10 +74,10 @@ class TestHelper:
         # Arrange
         filters = [{
                 'Name': 'private-ip-address',
-                'Values': ["172.31.1.94"],
+                'Values': ["172.31.255.20"],
             }]
 
-        expected_volume_id = "vol-0a1f5b2643560d242"
+        expected_volume_id = "vol-0ab3909a5663e3a0c"
         expected_volume_name = "/dev/sda1"
 
         # Act
