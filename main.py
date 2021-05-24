@@ -14,8 +14,6 @@ from models.task import Task
 from models.snapshot import SnapshotRequest
 
 # DISCUSS ("Change tickets only or SR Tickets included")
-# TODO ("Add waiters for snapshots")
-# TODO ("Get the Name tag automatically")
 
 ######################################
 ########## Global Variables ##########
@@ -61,7 +59,6 @@ def retrieve_arguments(argv):
 
     return ticket, agent
 
-
 def logger_config():
     # Call the global logger variable
     global logger
@@ -77,7 +74,6 @@ def logger_config():
     logger = Logger.create_logger(
         (LOG_FOLDER + datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + ".log")
     )
-
 
 def load_tasks(ticket):
 
@@ -104,7 +100,6 @@ def load_tasks(ticket):
     # Return tasks
     return tasks
 
-
 def create_ec2_client():
 
     # Instantiate BOTO client for EC2
@@ -112,7 +107,6 @@ def create_ec2_client():
 
     # Return the client
     return ec2
-
 
 def query_instance(client, filters):
 
@@ -130,11 +124,11 @@ def query_instance(client, filters):
     raise Exception(Const.EXCEPTION_NOT_FOUND_INSTANCE.format(
         filters[0]['Values'][0]))
 
-
 def create_snapshots(client, snapshot_requests):
 
-    # Initialize empty list of results strings
-    results = []
+    # Initialize empty list of results strings and ids list
+    ids = []
+    messages = []
 
     # Iterate through each snapshot requests
     for sr in snapshot_requests:
@@ -155,13 +149,27 @@ def create_snapshots(client, snapshot_requests):
         log(Const.MESSAGE_SNAPSHOT_CREATED.format(
             sr.hostname, response['SnapshotId']))
 
-        # Add message to results
-        results.append(Const.MESSAGE_SNAPSHOT_CREATED.format(
+        # Add id to list
+        ids.append(response['SnapshotId'])
+
+        # Create message and add to list
+        messages.append(Const.MESSAGE_SNAPSHOT_CREATED.format(
             sr.hostname, response['SnapshotId']))
 
-    # Return results
-    return results
+    # Return snapshot ids
+    return ids, messages
 
+def wait_for_snapshots_completion(client, snapshots_ids):
+
+    waiter = client.get_waiter('snapshot_completed')
+
+    waiter.wait(
+        SnapshotIds = snapshots_ids,
+        WaiterConfig={
+            'Delay': 15,
+            'MaxAttempts': 40
+        }
+    )
 
 def post_to_slack(message, blocks=None):
 
@@ -179,11 +187,9 @@ def post_to_slack(message, blocks=None):
     if response['ok'] != True:
         raise Exception(Const.EXCEPTION_MESSAGE_ERROR_SLACK)
 
-
 def log(message):
     # Logs an info message
     logger.info(message)
-
 
 def debug(message):
     # Logs a debug message
@@ -195,6 +201,9 @@ def debug(message):
 #####################################
 
 def main(argv):
+    # Call the global variables
+    global logger, error
+
     # Uncomment only for fast debugging purposes
     # ticket = os.environ['ENV_APP_TICKET']
     # agent = os.environ['ENV_APP_AGENT']
@@ -245,10 +254,16 @@ def main(argv):
                 snapshot_requests.append(s_request)
 
         # Create snapshots
-        results = create_snapshots(client, snapshot_requests)
+        snap_ids, results = create_snapshots(client, snapshot_requests)
 
-        # Post messages to Slack
-        post_to_slack(Helper.construct_results_message(results, ticket))
+        # Notify on Slack
+        post_to_slack(Helper.construct_results_message(results, f"A new snapshot request has been created for {ticket}:\n"))
+
+        # Wait for Snapshot creation to be completed
+        wait_for_snapshots_completion(client, snap_ids)
+
+        # Notify on Slack
+        post_to_slack(f"Snapshot creation completed for ticket {ticket}")
 
     # Defin all possible exceptions as explicit as possible
     # The last one should always be 'Exception' clause to handle
@@ -277,10 +292,11 @@ def main(argv):
     # A separate try except to post message to slack
     try:
         if error != None:
-            post_to_slack(Helper.construct_results_message([error], ticket))
+            post_to_slack(Helper.construct_results_message([error], f"Request for ticket {ticket} has been cancelled due to the follwoing errors:\n"))
     except Exception as e:
         error = Const.EXCEPTION_GENERAL.format(e)
         debug(error)
+        debug(traceback.format_exc())
 
 
 if __name__ == "__main__":

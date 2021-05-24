@@ -21,11 +21,9 @@ def format_today():
     return today.strftime("%Y%m%d")
 
 # Message construct
-def construct_results_message(results, ticket):
-
-    final_message = f"The results for ticket {ticket} are:\n"
+def construct_results_message(results, header):
 
     for result in results:
-        final_message += f"{result}\n"
+        header += f"{result}\n"
 
-    return final_message
+    return header
