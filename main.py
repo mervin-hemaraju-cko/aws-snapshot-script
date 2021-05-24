@@ -4,6 +4,7 @@ import boto3.ec2
 import os
 import sys
 import getopt
+import traceback
 import utils.helper as Helper
 import utils.logger as Logger
 import utils.constants as Const
@@ -13,6 +14,8 @@ from models.task import Task
 from models.snapshot import SnapshotRequest
 
 # DISCUSS ("Change tickets only or SR Tickets included")
+# TODO ("Add waiters for snapshots")
+# TODO ("Get the Name tag automatically")
 
 ######################################
 ########## Global Variables ##########
@@ -230,9 +233,15 @@ def main(argv):
 
             # If instance has a root volume
             if volume_id != None:
+
+                hostname = instance.name
+
+                if(task.hostname != None and task.hostname != ""):
+                    hostname = task.hostname
+
                 # Build snapshot request and
                 # insert in request list
-                s_request = SnapshotRequest(volume_id, task.hostname, agent)
+                s_request = SnapshotRequest(volume_id, hostname, agent)
                 snapshot_requests.append(s_request)
 
         # Create snapshots
@@ -245,20 +254,25 @@ def main(argv):
     # The last one should always be 'Exception' clause to handle
     # unknown exceptions
     except getopt.GetoptError as GE:
-        print(Const.EXCEPTION_OPTIONS_GENERAL.format(GE))
+        error = Const.EXCEPTION_OPTIONS_GENERAL.format(GE)
+        log(error)
+        debug(traceback.format_exc())
         sys.exit(2)
 
     except requests.exceptions.Timeout as TE:
         error = Const.EXCEPTION_TIMEOUT.format(TE)
         debug(error)
+        debug(traceback.format_exc())
 
     except requests.exceptions.HTTPError as HE:
         error = Const.EXCEPTION_HTTP_ERROR.format(HE)
         debug(error)
+        debug(traceback.format_exc())
 
     except Exception as e:
         error = Const.EXCEPTION_GENERAL.format(e)
         debug(error)
+        debug(traceback.format_exc())
 
     # A separate try except to post message to slack
     try:

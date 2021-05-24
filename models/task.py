@@ -19,10 +19,10 @@ class Task:
 
         # Load task in list
         for task in raw_tasks:
-            host = (task["description"]).strip()
-            name = Helper.retrieve_host((task["title"]).strip())
+            host = Helper.retrieve_host((task["title"]).strip())
+            name = (task["description"]).strip()
 
-            if name != None:
+            if(host != None):
                 # Add task in list
                 tasks.append(
                     Task(host, name)

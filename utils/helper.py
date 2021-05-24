@@ -7,8 +7,9 @@ from datetime import date
 def retrieve_host(title):
     
     action = title.split(":")
+    keyword = action[0].lower().strip()
 
-    if action[0] == "snap" or action[0] == "snapshot":
+    if keyword == "snap" or keyword == "snapshot":
         return action[1]
     else:
         return None

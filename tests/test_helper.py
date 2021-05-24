@@ -5,10 +5,14 @@ import utils.helper as Helper
 class TestHelper:
 
     testdata = [
-        ("snap:server_name0","server_name0"),
-        ("snapshot:server_name1","server_name1"),
-        ("snapsho:server_name2", None),
-        ("server_name2", None),
+        ("snap:10.13.30.52","10.13.30.52"),
+        ("SNAP:10.13.30.52","10.13.30.52"),
+        ("sNap:10.13.30.52","10.13.30.52"),
+        ("snapshot:160.133.230.252","160.133.230.252"),
+        ("SNAPSHOT:160.133.230.252","160.133.230.252"),
+        ("sNapShot:160.133.230.252","160.133.230.252"),
+        ("snapsho:192.168.100.1", None),
+        ("160.133.230.252", None),
         ("This is a test", None),
         ("sna:asdas", None),
     ]
@@ -38,7 +42,7 @@ class TestHelper:
 
     def test_format_today(self):
         # Arrange
-        expected_result = "20210509"
+        expected_result = "20210524"
 
         # Act
         result = Helper.format_today()

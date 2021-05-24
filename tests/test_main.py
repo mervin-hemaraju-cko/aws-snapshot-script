@@ -107,3 +107,37 @@ class TestHelper:
             
         # Assert
         assert expected_result == result
+
+    def test_query_instance_tag_name_1Of2(self):
+
+        # Arrange
+        filters = [{
+                'Name': 'private-ip-address',
+                'Values': ["172.31.255.20"],
+            }]
+
+        expected_result = "win_jump_pub_01"
+
+        # Act
+        client = Main.create_ec2_client()
+        result = Main.query_instance(client, filters).name
+
+        # Assert
+        assert result == expected_result
+
+    def test_query_instance_tag_name_2Of2(self):
+
+        # Arrange
+        filters = [{
+                'Name': 'private-ip-address',
+                'Values': ["172.31.255.30"],
+            }]
+
+        expected_result = "lin_jump_pub_01"
+
+        # Act
+        client = Main.create_ec2_client()
+        result = Main.query_instance(client, filters).name
+
+        # Assert
+        assert result == expected_result
