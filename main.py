@@ -257,13 +257,15 @@ def main(argv):
         snap_ids, results = create_snapshots(client, snapshot_requests)
 
         # Notify on Slack
-        post_to_slack(Helper.construct_results_message(results, f"A new snapshot request has been created for {ticket}:\n"))
+        post_to_slack(Helper.construct_results_message(results, Const.MESSAGE_SNAPSHOT_NEW.format(ticket)))
 
+        print(snap_ids)
+        
         # Wait for Snapshot creation to be completed
         wait_for_snapshots_completion(client, snap_ids)
 
         # Notify on Slack
-        post_to_slack(f"Snapshot creation completed for ticket {ticket}")
+        post_to_slack(Const.MESSAGE_SNAPSHOT_COMPLETED.format(ticket))
 
     # Defin all possible exceptions as explicit as possible
     # The last one should always be 'Exception' clause to handle
@@ -292,7 +294,7 @@ def main(argv):
     # A separate try except to post message to slack
     try:
         if error != None:
-            post_to_slack(Helper.construct_results_message([error], f"Request for ticket {ticket} has been cancelled due to the follwoing errors:\n"))
+            post_to_slack(Helper.construct_results_message([error], Const.MESSAGE_SNAPSHOT_CANCELLED.format(ticket)))
     except Exception as e:
         error = Const.EXCEPTION_GENERAL.format(e)
         debug(error)

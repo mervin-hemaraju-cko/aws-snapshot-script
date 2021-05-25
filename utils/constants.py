@@ -7,6 +7,9 @@ VALUE_URL_BASE_FRESH_SERVICE_TASKS = "{}/changes/{}/tasks"
 
 # MESSAGE
 MESSAGE_SNAPSHOT_CREATED = "The snapshot for {} has been created under {}"
+MESSAGE_SNAPSHOT_NEW = "A new snapshot request has been created for {}:\n"
+MESSAGE_SNAPSHOT_COMPLETED = "Snapshot creation completed for ticket {}"
+MESSAGE_SNAPSHOT_CANCELLED = "Request for ticket {} has been cancelled due to the follwoing errors:\n"
 
 # Descriptions
 DESC_SNAPSHOT = "This is a snapshot for server {}"

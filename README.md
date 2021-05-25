@@ -25,6 +25,90 @@ This document can be decoupled into 3 main parts:
 
 -   [The User Section](#user-section)  (How to use the script)
 
+## [User Section](#user-section)
+
+### Instructions
+
+There are a set of instructions to **strictly**follow in order to run
+the script correctly.
+
+1.  The correct AWS profile needs to be switched to the desired
+    environment before running the script.
+
+2.  A list of tasks should be defined in Fresh Service in the following
+    syntax (A screenshot has been inserted below):
+
+    -   Only tasks with the title of **snap:instance_ip** will take snapshots. 
+        Here **instance_ip** is the IP address of the instance on AWS
+
+    -   (optional) You can also set the instance name in the description on the task if 
+        you want to override the original name of the instance when setting the tag of the snapshot but that is fully optional.
+
+    -   The script will not take **Closed** tasks into considerations.
+
+    -   ![FreshServiceTask](./screenshots/task_format.png)
+
+### Run the Script
+
+Finally, you can run the script by going on the hosting server (where
+the script is hosted), navigating to the root folder of the script, and
+running the following command:
+`python main.py -t <ticketnumber> -a <agentname>` (Note that both
+**ticket number** and **agent name** parameter are mandatory)
+
+Below is the usage guide of the command:
+
+``` 
+$ python main.py
+usage: main.py [-t] [-a] [-h]
+
+Required arguments:
+-t, --ticket           The ticket number to process
+-a, --agent            The agent running the scrip (firstname.lastname@checkout.com)
+
+optional arguments:
+ -h  show this help message and exit
+```
+
+## [Admin Section](#admin-section)
+
+The admin section defines how to install and deploy the script in a
+production environment.
+
+To be able to run the script on your machine, you will need a
+combination of installed dependencies and environment variables pre-set
+on the machine.
+
+*Dependencies*
+--------------
+
+To install the dependencies, run the following command in the root
+project directory:
+
+`pip install -r requirements.txt`
+
+*Environment Variables*
+-----------------------
+
+A set of environment variables is necessary to be initialized before
+running the script.
+
+The list below can be written in a `.env` file and then use the command
+`source file.env` to export the environment variables.
+
+``` 
+export ENV_FRESH_SERVICE_KEY_API_B64=""
+export ENV_FRESH_SERVICE_URL="https://checkoutsupport.freshservice.com/api/v2"
+
+export ENV_SLACK_KEY_API=""
+export ENV_SLACK_CHANNEL=""
+export ENV_SLACK_USERNAME=""
+```
+
+No secret keys are defined for Boto3 as it will make use of the
+underlying profiles of AWS CLI to run on the desired AWS environment.
+
+
 ## [Technical Section](#technical-section)
 
 The script has been coded fully in Python Programming Language.
@@ -127,90 +211,6 @@ def post_to_slack(message, blocks=None):
 
     if response['ok'] != True:
         raise Exception(Const.EXCEPTION_MESSAGE_ERROR_SLACK)
-```
-
-## [Admin Section](#admin-section)
-
-The admin section defines how to install and deploy the script in a
-production environment.
-
-To be able to run the script on your machine, you will need a
-combination of installed dependencies and environment variables pre-set
-on the machine.
-
-*Dependencies*
---------------
-
-To install the dependencies, run the following command in the root
-project directory:
-
-`pip install -r requirements.txt`
-
-*Environment Variables*
------------------------
-
-A set of environment variables is necessary to be initialized before
-running the script.
-
-The list below can be written in a `.env` file and then use the command
-`source file.env` to export the environment variables.
-
-``` 
-export ENV_FRESH_SERVICE_KEY_API_B64=""
-export ENV_FRESH_SERVICE_URL="https://checkoutsupport.freshservice.com/api/v2"
-
-export ENV_SLACK_KEY_API=""
-export ENV_SLACK_CHANNEL=""
-export ENV_SLACK_USERNAME=""
-```
-
-No secret keys are defined for Boto3 as it will make use of the
-underlying profiles of AWS CLI to run on the desired AWS environment.
-
-## [User Section](#user-section)
-
-### Instructions
-
-There are a set of instructions to **strictly**follow in order to run
-the script correctly.
-
-1.  The correct AWS profile needs to be switched to the desired
-    environment before running the script.
-
-2.  A list of tasks should be defined in Fresh Service in the following
-    syntax (A screenshot has been inserted below):
-
-    -   Only tasks with a title of **snap:server\_name** will take
-        snapshots. Here **server\_name**is the name of the server
-        machine on AWS
-
-    -   The task description should contain the IP address of the
-        machine.
-
-    -   The script will not take **Closed** tasks into considerations.
-
-    -   ![FreshServiceTask](./screenshots/task_format.png)
-
-### Run the Script
-
-Finally, you can run the script by going on the hosting server (where
-the script is hosted), navigating to the root folder of the script, and
-running the following command:
-`python main.py -t <ticketnumber> -a <agentname>` (Note that both
-**ticket number** and **agent name** parameter are mandatory)
-
-Below is the usage guide of the command:
-
-``` 
-$ python main.py
-usage: main.py [-t] [-a] [-h]
-
-Required arguments:
--t, --ticket           The ticket number to process
--a, --agent            The agent running the scrip (firstname.lastname@checkout.com)
-
-optional arguments:
- -h  show this help message and exit
 ```
 
 ## [Troubleshooting](#troubleshooting-section)
