@@ -1,6 +1,6 @@
 import requests
 import json
-import boto3.ec2
+import boto3
 import os
 import sys
 import getopt
@@ -10,10 +10,10 @@ import utils.logger as Logger
 import utils.constants as Const
 from datetime import datetime
 from models.instance import Instance
-from models.task import Task
 from models.snapshot import SnapshotRequest
+from packages.freshtask.api import Api
+from packages.freshtask.task_utils import TaskUtils
 
-# DISCUSS ("Change tickets only or SR Tickets included")
 
 ######################################
 ########## Global Variables ##########
@@ -31,7 +31,7 @@ def retrieve_arguments(argv):
     agent = None
 
     # Try to get values from option arguments
-    opts, args = getopt.getopt(argv, "ht:a:", ["ticket=", "agent="])
+    opts, _ = getopt.getopt(argv, "ht:a:", ["ticket=", "agent="])
 
     # If no options passed, raise an error
     if len(opts) < 1:
@@ -75,30 +75,11 @@ def logger_config():
         (LOG_FOLDER + datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + ".log")
     )
 
-def load_tasks(ticket):
-
-    # Build headers for FreshService call
-    headers = Const.require_headers_template(
-        os.environ['ENV_FRESH_SERVICE_KEY_API_B64'])
-
-    # Get tasks from API FreshService
-    response = requests.get(Const.VALUE_URL_BASE_FRESH_SERVICE_TASKS.format(
-        os.environ['ENV_FRESH_SERVICE_URL'], ticket), headers=headers)
-
-    # Checks if GET call is successfull
-    if response.status_code != 200:
-        raise requests.exceptions.HTTPError(
-            Const.EXCEPTION_HTTP_ERROR_FRESHSERVICE)
-
-    # Format and load tasks
-    tasks = Task.loads(json.loads(response.content)["tasks"])
-
-    # If tasks is empty, raise an exception
-    if not tasks:
-        raise requests.exceptions.HTTPError(Const.EXCEPTION_TASKS_EMPTY)
-
-    # Return tasks
-    return tasks
+def load_open_tasks(ticket):
+    api = Api(os.environ['ENV_FRESH_SERVICE_KEY_API_B64'], "checkoutsupport.freshservice.com")
+    tasks = api.load_tasks(ticket)
+    task_utils = TaskUtils(tasks).get_open()
+    return task_utils
 
 def create_ec2_client():
 
@@ -220,7 +201,7 @@ def main(argv):
         ticket, agent = retrieve_arguments(argv)
 
         # Get the list of tasks from FreshService
-        tasks = load_tasks(ticket)
+        tasks = load_open_tasks(ticket)
 
         # Define empty list of snapshot request
         snapshot_requests = []
@@ -231,35 +212,38 @@ def main(argv):
         # For each IP address defined
         for task in tasks:
 
-            # Define filters for EC2 client
-            filters = [Const.require_filter_template(task.hostip)]
+            hostip = Helper.retrieve_host((task.title).strip())
+            description = task.description.strip()
+            
+            if hostip != None:
 
-            # Call the ec2 client
-            instance = query_instance(client, filters)
+                # Define filters for EC2 client
+                filters = [Const.require_filter_template(hostip)]
 
-            # Get the volume id of the instance
-            volume_id = instance.root_volume_id
+                # Call the ec2 client
+                instance = query_instance(client, filters)
 
-            # If instance has a root volume
-            if volume_id != None:
+                # Get the volume id of the instance
+                volume_id = instance.root_volume_id
 
-                hostname = instance.name
+                # If instance has a root volume
+                if volume_id != None:
 
-                if(task.hostname != None and task.hostname != ""):
-                    hostname = task.hostname
+                    hostname = instance.name
 
-                # Build snapshot request and
-                # insert in request list
-                s_request = SnapshotRequest(volume_id, hostname, agent)
-                snapshot_requests.append(s_request)
+                    if(description != None and description != ""):
+                        hostname = description
+
+                    # Build snapshot request and
+                    # insert in request list
+                    s_request = SnapshotRequest(volume_id, hostname, agent)
+                    snapshot_requests.append(s_request)
 
         # Create snapshots
         snap_ids, results = create_snapshots(client, snapshot_requests)
 
         # Notify on Slack
         post_to_slack(Helper.construct_results_message(results, Const.MESSAGE_SNAPSHOT_NEW.format(ticket)))
-
-        print(snap_ids)
         
         # Wait for Snapshot creation to be completed
         wait_for_snapshots_completion(client, snap_ids)
