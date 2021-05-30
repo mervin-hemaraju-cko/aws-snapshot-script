@@ -1,29 +1,68 @@
+import getpass
 from datetime import date
+import utils.constants as Const
 
 # This function checks whether the task title
 # is a valid approved snapshot to be done
 # this can only be recognized by the words [snap] or [snapshot]
 # Any other keywors would be considered not a snapshot
-def retrieve_host(title):
-    
-    action = title.split(":")
-    keyword = action[0].lower().strip()
+def retrieve_host(tasks):
 
-    if keyword == "snap" or keyword == "snapshot":
-        return action[1]
-    else:
-        return None
+    hosts = []
+
+    for task in tasks:
+
+        # Split to get keyword and host
+        title_params = task.title.split(":")
+        
+        # Check if correct format
+        if len(title_params) == 2:
+            
+            # Retrieve the keyword
+            keyword = title_params[0].lower().strip()
+
+            # Check if keyword matches
+            if keyword == "snap" or keyword == "snapshot":
+                
+                # Add host to list
+                hosts.append(title_params[1])
+
+    # Return list of hosts
+    return hosts
 
 # This function returns today's date
-# in a readable format
+# in the following format YYYYMMDD
 def format_today():
     today = date.today()
     return today.strftime("%Y%m%d")
 
 # Message construct
+# Construct a message with different lines
 def construct_results_message(results, header):
 
     for result in results:
         header += f"{result}\n"
 
     return header
+
+# Return the current username
+# logged on the server
+def get_username():
+    username = getpass.getuser()
+
+    if username == "root":
+        raise Exception(Const.EXCEPTION_NON_USER_EXECUTION)
+
+    return getpass.getuser()
+
+# Remove duplicates in snapshot requests
+def remove_duplicate_snapshots(snapshot_requests):
+    new_list = []
+    
+    for request in snapshot_requests:
+        is_present = any(x.volume_id == request.volume_id for x in new_list)
+
+        if not is_present:
+            new_list.append(request)
+    
+    return new_list

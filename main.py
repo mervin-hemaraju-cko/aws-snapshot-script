@@ -11,9 +11,11 @@ import utils.constants as Const
 from datetime import datetime
 from models.instance import Instance
 from models.snapshot import SnapshotRequest
-from packages.freshtask.api import Api
-from packages.freshtask.task_utils import TaskUtils
+from freshtasks.api import Api
+from freshtasks.task_utils import TaskUtils
 
+#TODO("Implement Lock Release mechanism to prevent double snapshot requests")
+#TODO("Catch FreshTasks Exceptions")
 
 ######################################
 ########## Global Variables ##########
@@ -28,10 +30,9 @@ error = None
 def retrieve_arguments(argv):
 
     ticket = None
-    agent = None
 
     # Try to get values from option arguments
-    opts, _ = getopt.getopt(argv, "ht:a:", ["ticket=", "agent="])
+    opts, _ = getopt.getopt(argv, "ht:", ["ticket="])
 
     # If no options passed, raise an error
     if len(opts) < 1:
@@ -47,17 +48,13 @@ def retrieve_arguments(argv):
         # If option ticket passed
         elif opt in ("-t", "--ticket"):
             ticket = arg
-        
-        # If option agent passed
-        elif opt in ("-a", "--agent"):
-            agent = arg
 
     # Both tickets and agent should be set
     # If one of them is missing, raise an error
-    if ticket == None or agent == None:
+    if ticket == None:
         raise getopt.GetoptError(Const.EXCEPTION_OPTIONS_MISSING_ARGUMENTS)
 
-    return ticket, agent
+    return ticket
 
 def logger_config():
     # Call the global logger variable
@@ -76,10 +73,26 @@ def logger_config():
     )
 
 def load_open_tasks(ticket):
-    api = Api(os.environ['ENV_FRESH_SERVICE_KEY_API_B64'], "checkoutsupport.freshservice.com")
+    # Make API call to Fresh Tasks
+    api = Api(os.environ['ENV_FRESH_SERVICE_KEY_API_B64'], Const.VALUE_DOMAIN_FRESHSERVICE_CKO)
+
+    # Get the list of tasks
     tasks = api.load_tasks(ticket)
+
+    # Get Open tasks only
     task_utils = TaskUtils(tasks).get_open()
+    
     return task_utils
+
+def filter_host_ips(tasks):
+    # Retrieve valid ip address from tasks
+    host_ip_addresses = Helper.retrieve_host(tasks)
+
+    # Check if ip list is not empty
+    if not host_ip_addresses:
+        raise IndexError(Const.EXCEPTION_SNAPSHOT_UNDEFINED)
+
+    return host_ip_addresses
 
 def create_ec2_client():
 
@@ -117,7 +130,7 @@ def create_snapshots(client, snapshot_requests):
         # Create a tag for each snapshot
         # Tag should consist of Name with the format: TodaysDate_ServerName_Snapshot
         tags = Const.require_tags_template(
-            f"{Helper.format_today()}_{sr.hostname}_snapshot", sr.agent)
+            f"{Helper.format_today()}_{sr.hostname}_snapshot", sr.agent, sr.ticket_number)
 
         # Create the snapshot
         response = client.create_snapshot(
@@ -196,12 +209,18 @@ def main(argv):
         # Initiate Logger
         logger_config()
 
-        # Retrieve ticket number and agent
+        # Retrieve ticket number
         # from command line option arguments
-        ticket, agent = retrieve_arguments(argv)
+        ticket = retrieve_arguments(argv)
+
+        # Retrive Username as Agent
+        agent = Helper.get_username()
 
         # Get the list of tasks from FreshService
         tasks = load_open_tasks(ticket)
+
+        # Retrieve valid host ips from tasks
+        host_ip_addresses = filter_host_ips(tasks)
 
         # Define empty list of snapshot request
         snapshot_requests = []
@@ -210,34 +229,27 @@ def main(argv):
         client = create_ec2_client()
 
         # For each IP address defined
-        for task in tasks:
+        for ip in host_ip_addresses:
 
-            hostip = Helper.retrieve_host((task.title).strip())
-            description = task.description.strip()
-            
-            if hostip != None:
+            # Define filters for EC2 client
+            filters = [Const.require_filter_template(ip)]
 
-                # Define filters for EC2 client
-                filters = [Const.require_filter_template(hostip)]
+            # Call the ec2 client
+            instance = query_instance(client, filters)
 
-                # Call the ec2 client
-                instance = query_instance(client, filters)
+            # Get the volume id of the instance
+            volume_id = instance.root_volume_id
 
-                # Get the volume id of the instance
-                volume_id = instance.root_volume_id
+            # If instance has a root volume
+            if volume_id != None:
 
-                # If instance has a root volume
-                if volume_id != None:
+                # Build snapshot request and
+                # insert in request list
+                s_request = SnapshotRequest(volume_id, instance.name, agent, ticket)
+                snapshot_requests.append(s_request)
 
-                    hostname = instance.name
-
-                    if(description != None and description != ""):
-                        hostname = description
-
-                    # Build snapshot request and
-                    # insert in request list
-                    s_request = SnapshotRequest(volume_id, hostname, agent)
-                    snapshot_requests.append(s_request)
+        # Filter duplicate snapshots and remove them
+        snapshot_requests = Helper.remove_duplicate_snapshots(snapshot_requests)
 
         # Create snapshots
         snap_ids, results = create_snapshots(client, snapshot_requests)

@@ -17,6 +17,7 @@ class Instance:
         volume_id = None
         instance_name = "undefined"
 
+        # Retrieve Root Volume ID
         for volume in volumes:
             if volume['DeviceName'] == root_volume_name:
                 volume_id = volume['Ebs']['VolumeId']

@@ -143,9 +143,6 @@ cython_debug/
 # Env Files
 *.env
 
-# Json Files
-*.json
-
 # Log files
 *.log
 

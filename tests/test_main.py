@@ -12,64 +12,88 @@ import main as Main
 
 class TestHelper:
 
-    def test_post_to_slack(self):
-        # Arrange
-        message = "This is a message\n With new lines"
+    # Uncomment this test for the Slack posting
+    # def test_post_to_slack(self):
+    #     # Arrange
+    #     message = "This is a message\n With new lines"
 
-        # Act
-        try:
-            Main.post_to_slack(message)
-            result = True
-        except:
-            result = False
+    #     # Act
+    #     try:
+    #         Main.post_to_slack(message)
+    #         result = True
+    #     except:
+    #         result = False
             
-        # Assert
-        assert result == True
+    #     # Assert
+    #     assert result == True
 
-    def test_get_tasks_size(self):
+    def test_get_tasks_NormalData(self):
         # Arrange
-        ticket = "7303"
-        expected_result = 2
+        ticket = "#CHN-7303"
+        expected_result = 3
 
         # Act
-        result = Main.load_tasks(ticket)
+        result = Main.load_open_tasks(ticket)
 
         # Assert
         assert expected_result == len(result)
 
-    def test_get_tasks_error(self):
+    def test_get_tasks_AbnormalData(self):
         # Arrange
         ticket = "asdasd"
-        expected_result = "An HTTP error occured while fetching tickets from FreshService"
+        expected_result = "Incorrect ticket format provided. Please read the docs"
 
         # Act
         try:
-            Main.load_tasks(ticket)
+            Main.load_open_tasks(ticket)
             result = "Failed"
-        except requests.exceptions.HTTPError as e:
+        except IndexError as e:
             result = str(e)
             pass
 
         # Assert
         assert expected_result == result
 
-    def test_get_tasks_empty(self):
+    def test_get_tasks_EmptyData(self):
         # Arrange
-        ticket = "72"
-        expected_result = "You don't have any tasks for snapshots"
+        ticket = "#CHN-72"
+        expected_result = []
+
+        # Act
+        result = Main.load_open_tasks(ticket)
+
+        # Assert
+        assert expected_result == result
+
+    def test_filter_host_ip_NormalData(self):
+        # Arrange
+        ticket = "#CHN-7303"
+        expected_size = 2
+
+        # Act
+        tasks = Main.load_open_tasks(ticket)
+        result = Main.filter_host_ips(tasks)
+
+        # Assert
+        assert len(result) == expected_size
+
+    def test_filter_host_ip_EmptyData(self):
+        # Arrange
+        ticket = "#CHN-72"
+        expected_result = "No snapshots defined for this ticket. Please verify the format again."
 
         # Act
         try:
-            Main.load_tasks(ticket)
-            result = "Failed"
-        except requests.exceptions.HTTPError as e:
+            tasks = Main.load_open_tasks(ticket)
+            result = Main.filter_host_ips(tasks)
+        except IndexError as e:
             result = str(e)
             pass
 
         # Assert
         assert expected_result == result
 
-    def test_query_instance_existing(self):
+    def test_query_instance_NormalData(self):
 
         # Arrange
         filters = [{
@@ -88,7 +112,7 @@ class TestHelper:
         assert expected_volume_id == result.root_volume_id
         assert expected_volume_name == result.root_volume_name
 
-    def test_query_instance_nonexisting(self):
+    def test_query_instance_AbnormalData(self):
 
         # Arrange
         filters = [{
