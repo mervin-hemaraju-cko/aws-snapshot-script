@@ -69,32 +69,32 @@ class TestHelper:
 
     testdata = [
         ([
-            SnapshotRequest("vol-123", "ec-123", "mervin.hemaraju"),
-            SnapshotRequest("vol-124", "ec-123", "mervin.hemaraju"),
-            SnapshotRequest("vol-123", "ec-123", "mervin.hemaraju"),
-            SnapshotRequest("vol-125", "ec-123", "mervin.hemaraju"),
-            SnapshotRequest("vol-125", "ec-123", "mervin.hemaraju"),
+            SnapshotRequest("vol-123", "ec-123", "mervin.hemaraju", "#CHN-7303"),
+            SnapshotRequest("vol-124", "ec-123", "mervin.hemaraju", "#CHN-7303"),
+            SnapshotRequest("vol-123", "ec-123", "mervin.hemaraju", "#CHN-7303"),
+            SnapshotRequest("vol-125", "ec-123", "mervin.hemaraju", "#CHN-7303"),
+            SnapshotRequest("vol-125", "ec-123", "mervin.hemaraju", "#CHN-7303"),
         ],
         ["vol-123", "vol-124", "vol-125"]
         ),
         ([
-            SnapshotRequest("vol-123", "ec-123", "charles"),
-            SnapshotRequest("vol-123", "ec-13", "Ray"),
-            SnapshotRequest("vol-123", "ec-3", "mervin"),
+            SnapshotRequest("vol-123", "ec-123", "charles", "#CHN-7303"),
+            SnapshotRequest("vol-123", "ec-13", "Ray", "#CHN-7303"),
+            SnapshotRequest("vol-123", "ec-3", "mervin", "#CHN-7303"),
         ],
         ["vol-123"]
         ),
         ([
-            SnapshotRequest("vol-124", "ec-123", "mervin"),
-            SnapshotRequest("vol-125", "ec-123", "mervin"),
-            SnapshotRequest("vol-126", "ec-123", "mervin"),
+            SnapshotRequest("vol-124", "ec-123", "mervin", "#CHN-7303"),
+            SnapshotRequest("vol-125", "ec-123", "mervin", "#CHN-7303"),
+            SnapshotRequest("vol-126", "ec-123", "mervin", "#CHN-7303"),
         ],
         ["vol-124","vol-125","vol-126"]
         ),
         ([
-            SnapshotRequest("vol-124", "ec-123", "mervin"),
-            SnapshotRequest("vol-126", "ec-123", "mervin"),
-            SnapshotRequest("vol-126", "ec-123", "mervin"),
+            SnapshotRequest("vol-124", "ec-123", "mervin", "#CHN-7303"),
+            SnapshotRequest("vol-126", "ec-123", "mervin", "#CHN-7303"),
+            SnapshotRequest("vol-126", "ec-123", "mervin", "#CHN-7303"),
         ],
         ["vol-124","vol-126"]
         ),

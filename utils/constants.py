@@ -11,6 +11,7 @@ MESSAGE_SNAPSHOT_CREATED = "The snapshot for {} has been created under {}"
 MESSAGE_SNAPSHOT_NEW = "A new snapshot request has been created for {}:\n"
 MESSAGE_SNAPSHOT_COMPLETED = "Snapshot creation completed for ticket {}"
 MESSAGE_SNAPSHOT_CANCELLED = "Request for ticket {} has been cancelled due to the following errors:\n"
+MESSAGE_USER_SCRIPT_LAUNCH = "The user {} has executed the script."
 
 # Descriptions
 DESC_SNAPSHOT = "This is a snapshot for server {}"

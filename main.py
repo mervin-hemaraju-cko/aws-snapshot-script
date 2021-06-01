@@ -14,7 +14,6 @@ from models.snapshot import SnapshotRequest
 from freshtasks.api import Api
 from freshtasks.task_utils import TaskUtils
 
-#TODO("Implement Lock Release mechanism to prevent double snapshot requests")
 #TODO("Catch FreshTasks Exceptions")
 
 ######################################
@@ -51,7 +50,7 @@ def retrieve_arguments(argv):
 
     # Both tickets and agent should be set
     # If one of them is missing, raise an error
-    if ticket == None:
+    if ticket == None or ticket == "":
         raise getopt.GetoptError(Const.EXCEPTION_OPTIONS_MISSING_ARGUMENTS)
 
     return ticket
@@ -215,6 +214,9 @@ def main(argv):
 
         # Retrive Username as Agent
         agent = Helper.get_username()
+
+        # Log user execution
+        log(Const.MESSAGE_USER_SCRIPT_LAUNCH.format(agent))
 
         # Get the list of tasks from FreshService
         tasks = load_open_tasks(ticket)
