@@ -26,11 +26,14 @@ class TestHelper:
             
     #     # Assert
     #     assert result == True
-
-    def test_get_tasks_NormalData(self):
-        # Arrange
-        ticket = "#CHN-7303"
-        expected_result = 3
+    testdata = [
+        ("#CHN-1", 1),
+        ("CHN-1", 1),
+        ("#CHN-2", 0),
+        ("CHN-2", 0),
+    ]
+    @pytest.mark.parametrize("ticket,expected_result", testdata)
+    def test_get_tasks_NormalData(self,ticket, expected_result):
 
         # Act
         result = Main.load_open_tasks(ticket)
@@ -38,11 +41,14 @@ class TestHelper:
         # Assert
         assert expected_result == len(result)
 
-    def test_get_tasks_AbnormalData(self):
-        # Arrange
-        ticket = "asdasd"
-        expected_result = "Incorrect ticket format provided. Please read the docs"
-
+    testdata = [
+        ("#CHN--1", "Incorrect ticket format provided. Please read the docs"),
+        ("asdas", "Incorrect ticket format provided. Please read the docs"),
+        ("CHN1", "Incorrect ticket format provided. Please read the docs"),
+        ("123", "Incorrect ticket format provided. Please read the docs"),
+    ]
+    @pytest.mark.parametrize("ticket,expected_result", testdata)
+    def test_get_tasks_AbnormalData(self, ticket, expected_result):
         # Act
         try:
             Main.load_open_tasks(ticket)
@@ -56,7 +62,7 @@ class TestHelper:
 
     def test_get_tasks_EmptyData(self):
         # Arrange
-        ticket = "#CHN-72"
+        ticket = "#CHN-2"
         expected_result = []
 
         # Act
@@ -67,7 +73,7 @@ class TestHelper:
 
     def test_filter_host_ip_NormalData(self):
         # Arrange
-        ticket = "#CHN-7303"
+        ticket = "#CHN-1"
         expected_size = 2
 
         # Act
@@ -79,7 +85,7 @@ class TestHelper:
 
     def test_filter_host_ip_EmptyData(self):
         # Arrange
-        ticket = "#CHN-72"
+        ticket = "#CHN-2"
         expected_result = "No snapshots defined for this ticket. Please verify the format again."
 
         # Act

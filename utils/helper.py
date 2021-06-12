@@ -6,26 +6,27 @@ import utils.constants as Const
 # is a valid approved snapshot to be done
 # this can only be recognized by the words [snap] or [snapshot]
 # Any other keywors would be considered not a snapshot
-def retrieve_host(tasks):
+def retrieve_hosts(tasks):
 
     hosts = []
 
     for task in tasks:
 
-        # Split to get keyword and host
-        title_params = task.title.split(":")
-        
-        # Check if correct format
-        if len(title_params) == 2:
-            
-            # Retrieve the keyword
-            keyword = title_params[0].lower().strip()
+        # Define a list of possible keywords
+        keywords = ["snapshots", "snapshot"]
 
-            # Check if keyword matches
-            if keyword == "snap" or keyword == "snapshot":
-                
-                # Add host to list
-                hosts.append(title_params[1])
+        # Check if title of task matches keyword
+        if(task.title.lower().strip() in keywords):
+
+            # Retrieve the description and strip
+            description = task.description.strip()
+
+            if(description != "" and description != None):
+                # Split to get hosts
+                desc_hosts = description.split(";")
+
+                # Extend list in case there are multiple tasks with snapshots
+                hosts.extend(desc_hosts)
 
     # Return list of hosts
     return hosts

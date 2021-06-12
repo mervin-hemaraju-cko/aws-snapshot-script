@@ -4,7 +4,6 @@
 
 # VALUES
 VALUE_URL_BASE_FRESH_SERVICE_TASKS = "{}/changes/{}/tasks"
-VALUE_DOMAIN_FRESHSERVICE_CKO = "checkoutsupport.freshservice.com"
 
 # MESSAGE
 MESSAGE_SNAPSHOT_CREATED = "The snapshot for {} has been created under {}"

@@ -7,12 +7,12 @@ from freshtasks.task import Task
 class TestHelper:
 
     testdata = [
-        ("tests/test_data/data_tasks_normald.json", ["1.20.30.255", "255.255.255.255", "169.31.1.30", "17.255.1.30"]),
-        ("tests/test_data/data_tasks_mixd.json", ["1.20.30.255", "17.255.1.30"]),
+        ("tests/test_data/data_tasks_normald.json", ["1.1.1.1", "2.2.2.2", "3.3.3.3", "4.4.4.4"]),
+        ("tests/test_data/data_tasks_mixd.json", ["10.20.20.20", "10.30.30.30"]),
         ("tests/test_data/data_tasks_abnormald.json", [])
     ]
     @pytest.mark.parametrize("test_data,expected_result", testdata)
-    def test_retrieve_host_NormalData(self,test_data,expected_result):
+    def test_retrieve_hosts(self,test_data,expected_result):
 
         # Arrange
         tasks = []
@@ -25,7 +25,7 @@ class TestHelper:
                 task = Task(json_obj)
                 tasks.append(task)
 
-        result = Helper.retrieve_host(tasks)
+        result = Helper.retrieve_hosts(tasks)
 
         # Assert
         assert result == expected_result
@@ -49,7 +49,7 @@ class TestHelper:
 
     def test_format_today(self):
         # Arrange
-        expected_result = "20210530"
+        expected_result = "20210612"
 
         # Act
         result = Helper.format_today()

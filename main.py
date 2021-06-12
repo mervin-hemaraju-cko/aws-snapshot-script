@@ -73,7 +73,10 @@ def logger_config():
 
 def load_open_tasks(ticket):
     # Make API call to Fresh Tasks
-    api = Api(os.environ['ENV_FRESH_SERVICE_KEY_API_B64'], Const.VALUE_DOMAIN_FRESHSERVICE_CKO)
+    api = Api(
+        os.environ['ENV_FRESH_SERVICE_KEY_API_B64'], 
+        os.environ["ENV_VALUE_DOMAIN_FRESHSERVICE_CKO"]
+    )
 
     # Get the list of tasks
     tasks = api.load_tasks(ticket)
@@ -85,7 +88,7 @@ def load_open_tasks(ticket):
 
 def filter_host_ips(tasks):
     # Retrieve valid ip address from tasks
-    host_ip_addresses = Helper.retrieve_host(tasks)
+    host_ip_addresses = Helper.retrieve_hosts(tasks)
 
     # Check if ip list is not empty
     if not host_ip_addresses:
@@ -197,10 +200,6 @@ def main(argv):
     # Call the global variables
     global logger, error
 
-    # Uncomment only for fast debugging purposes
-    # ticket = os.environ['ENV_APP_TICKET']
-    # agent = os.environ['ENV_APP_AGENT']
-
     # Try except clause to
     # handle all possible errors in the whole script
     # to prevent crash
@@ -213,7 +212,11 @@ def main(argv):
         ticket = retrieve_arguments(argv)
 
         # Retrive Username as Agent
-        agent = Helper.get_username()
+        agent = Helper.get_username()        
+
+        # Uncomment only for fast debugging purposes
+        # ticket = os.environ['ENV_APP_TICKET']
+        # agent = os.environ['ENV_APP_AGENT']
 
         # Log user execution
         log(Const.MESSAGE_USER_SCRIPT_LAUNCH.format(agent))
