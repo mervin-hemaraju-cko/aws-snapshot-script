@@ -1,4 +1,4 @@
 boto3==1.17.83
-freshtasks==0.3
+freshtasks==0.5
 requests==2.18.4
 urllib3==1.22

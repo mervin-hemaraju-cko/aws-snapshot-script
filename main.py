@@ -82,7 +82,12 @@ def load_open_tasks(ticket):
     # Get Open tasks only
     task_utils = TaskUtils(tasks).get_open()
     
-    return task_utils
+    return task_utils, api
+
+def close_tasks(api, tasks, ticket):
+    
+    for task in tasks:
+        api.close_task(ticket, task.id)
 
 def filter_host_ips(tasks):
     # Retrieve valid ip address from tasks
@@ -224,7 +229,7 @@ def main(argv):
         log(Const.MESSAGE_USER_SCRIPT_LAUNCH.format(agent))
 
         # Get the list of tasks from FreshService
-        tasks = load_open_tasks(ticket)
+        tasks, api = load_open_tasks(ticket)
 
         # Retrieve valid host ips from tasks
         host_ip_addresses = filter_host_ips(tasks)
@@ -257,6 +262,9 @@ def main(argv):
 
         # Create snapshots
         snap_ids, results = create_snapshots(client, snapshot_requests)
+
+        # Close tasks 
+        close_tasks(api, tasks, ticket)
 
         # Notify on Slack
         post_to_slack(Helper.construct_results_message(results, Const.MESSAGE_SNAPSHOT_NEW.format(ticket)))
