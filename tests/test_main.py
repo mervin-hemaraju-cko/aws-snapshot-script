@@ -27,8 +27,8 @@ class TestHelper:
     #     # Assert
     #     assert result == True
     testdata = [
-        ("#CHN-1", 1),
-        ("CHN-1", 1),
+        ("#CHN-1", 2),
+        ("CHN-1", 2),
         ("#CHN-2", 0),
         ("CHN-2", 0),
     ]
@@ -99,22 +99,75 @@ class TestHelper:
         # Assert
         assert expected_result == result
 
-    def test_query_instance_NormalData(self):
+    def test_query_instance_NormalData_ByIp_1Of2(self):
 
         # Arrange
-        filters = [{
-                'Name': 'private-ip-address',
-                'Values': ["172.31.255.20"],
-            }]
+        host = "172.31.255.20"
 
+        expected_name = "win_jump_pub_01"
         expected_volume_id = "vol-0ab3909a5663e3a0c"
         expected_volume_name = "/dev/sda1"
 
         # Act
         client = Main.create_ec2_client()
-        result = Main.query_instance(client, filters)
+        result = Main.query_instance(client, host)
 
         # Assert
+        assert expected_name == result.name
+        assert expected_volume_id == result.root_volume_id
+        assert expected_volume_name == result.root_volume_name
+
+    def test_query_instance_NormalData_ByIp_2Of2(self):
+
+        # Arrange
+        host = "172.31.255.30"
+
+        expected_name = "lin_jump_pub_01"
+        expected_volume_id = "vol-0430d0945194a0a59"
+        expected_volume_name = "/dev/sda1"
+
+        # Act
+        client = Main.create_ec2_client()
+        result = Main.query_instance(client, host)
+
+        # Assert
+        assert expected_name == result.name
+        assert expected_volume_id == result.root_volume_id
+        assert expected_volume_name == result.root_volume_name
+
+    def test_query_instance_NormalData_ByHostname_1Of2(self):
+
+        # Arrange
+        host = "win_jump_pub_01"
+
+        expected_name = "win_jump_pub_01"
+        expected_volume_id = "vol-0ab3909a5663e3a0c"
+        expected_volume_name = "/dev/sda1"
+
+        # Act
+        client = Main.create_ec2_client()
+        result = Main.query_instance(client, host)
+
+        # Assert
+        assert expected_name == result.name
+        assert expected_volume_id == result.root_volume_id
+        assert expected_volume_name == result.root_volume_name
+
+    def test_query_instance_NormalData_ByHostname_2Of2(self):
+
+        # Arrange
+        host = "lin_jump_pub_01"
+
+        expected_name = "lin_jump_pub_01"
+        expected_volume_id = "vol-0430d0945194a0a59"
+        expected_volume_name = "/dev/sda1"
+
+        # Act
+        client = Main.create_ec2_client()
+        result = Main.query_instance(client, host)
+
+        # Assert
+        assert expected_name == result.name
         assert expected_volume_id == result.root_volume_id
         assert expected_volume_name == result.root_volume_name
 
@@ -137,37 +190,3 @@ class TestHelper:
             
         # Assert
         assert expected_result == result
-
-    def test_query_instance_tag_name_1Of2(self):
-
-        # Arrange
-        filters = [{
-                'Name': 'private-ip-address',
-                'Values': ["172.31.255.20"],
-            }]
-
-        expected_result = "win_jump_pub_01"
-
-        # Act
-        client = Main.create_ec2_client()
-        result = Main.query_instance(client, filters).name
-
-        # Assert
-        assert result == expected_result
-
-    def test_query_instance_tag_name_2Of2(self):
-
-        # Arrange
-        filters = [{
-                'Name': 'private-ip-address',
-                'Values': ["172.31.255.30"],
-            }]
-
-        expected_result = "lin_jump_pub_01"
-
-        # Act
-        client = Main.create_ec2_client()
-        result = Main.query_instance(client, filters).name
-
-        # Assert
-        assert result == expected_result

@@ -30,16 +30,23 @@ EXCEPTION_NON_USER_EXECUTION = "Please run this script in a non-root user."
 EXCEPTION_SNAPSHOT_UNDEFINED = "No snapshots defined for this ticket. Please verify the format again."
 
 # Dictionary values
-def require_filter_template(ip_address):
+def require_filter_template_ip(ip_address):
     return {
         'Name': 'private-ip-address',
-                'Values': [ip_address],
+        'Values': [ip_address],
     }
 
-
+def require_filter_template_hostname(hostname):
+    return {
+        'Name': 'tag:Name',
+        'Values': [hostname],
+    }
+    
 def require_headers_template(api_key):
-    return {"Content-Type": "application/json; charset=utf-8",
-            "Authorization": f"Basic {api_key}"}
+    return {
+        "Content-Type": "application/json; charset=utf-8",
+        "Authorization": f"Basic {api_key}"
+    }
 
 
 def require_tags_template(name, agent, ticket):

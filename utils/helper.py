@@ -1,4 +1,5 @@
 import getpass
+import re
 from datetime import date
 import utils.constants as Const
 
@@ -67,3 +68,9 @@ def remove_duplicate_snapshots(snapshot_requests):
             new_list.append(request)
     
     return new_list
+
+# Checks whether a given string
+# has ip address format
+def is_an_ip_address(data):
+    pat = re.match("^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$", data)
+    return bool(pat)

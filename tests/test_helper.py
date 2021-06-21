@@ -49,7 +49,7 @@ class TestHelper:
 
     def test_format_today(self):
         # Arrange
-        expected_result = "20210612"
+        expected_result = "20210621"
 
         # Act
         result = Helper.format_today()
@@ -112,3 +112,28 @@ class TestHelper:
         # Assert
         assert result == expected_result
         assert len(result) == len(expected_result)
+
+    testdata = [
+        ("1.1.1.1", True),
+        ("10.10.10.10", True),
+        ("1.10.100.255", True),
+        ("255.255.255.255", True),
+        ("192.168.100.", False),
+        ("300.168.100.1", False),
+        ("1.168.100.300", False),
+        ("192.168..1", False),
+        ("192..1.1", False),
+        (".1.1.1", False),
+        ("hello.168.100.1", False),
+        ("t.r.s.a", False),
+        ("100.1.1.1:20", False),
+    ]
+    @pytest.mark.parametrize("test_data,expected_result", testdata)
+    def test_is_an_ip_address(self,test_data,expected_result):
+        # Arrange
+
+        # Act
+        result = Helper.is_an_ip_address(test_data)
+
+        # Assert
+        assert result == expected_result

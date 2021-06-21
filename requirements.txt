@@ -1,4 +1,4 @@
 boto3==1.17.83
-Fresh-Tasks==0.0.1
+freshtasks==0.3
 requests==2.18.4
 urllib3==1.22

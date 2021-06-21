@@ -14,8 +14,6 @@ from models.snapshot import SnapshotRequest
 from freshtasks.api import Api
 from freshtasks.task_utils import TaskUtils
 
-#TODO("Catch FreshTasks Exceptions")
-
 ######################################
 ########## Global Variables ##########
 ######################################
@@ -104,9 +102,13 @@ def create_ec2_client():
     # Return the client
     return ec2
 
-def query_instance(client, filters):
+def query_instance(client, host):
+    
+    if Helper.is_an_ip_address(host):
+        filters = [Const.require_filter_template_ip(host)]
+    else:
+        filters = [Const.require_filter_template_hostname(host)]
 
-    # Filter instances
     response = client.describe_instances(Filters=filters)
 
     # Retrieve instances
@@ -234,13 +236,10 @@ def main(argv):
         client = create_ec2_client()
 
         # For each IP address defined
-        for ip in host_ip_addresses:
-
-            # Define filters for EC2 client
-            filters = [Const.require_filter_template(ip)]
+        for host in host_ip_addresses:
 
             # Call the ec2 client
-            instance = query_instance(client, filters)
+            instance = query_instance(client, host)
 
             # Get the volume id of the instance
             volume_id = instance.root_volume_id
@@ -268,7 +267,7 @@ def main(argv):
         # Notify on Slack
         post_to_slack(Const.MESSAGE_SNAPSHOT_COMPLETED.format(ticket))
 
-    # Defin all possible exceptions as explicit as possible
+    # Define all possible exceptions as explicit as possible
     # The last one should always be 'Exception' clause to handle
     # unknown exceptions
     except getopt.GetoptError as GE:
