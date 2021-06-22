@@ -49,7 +49,7 @@ class TestHelper:
 
     def test_format_today(self):
         # Arrange
-        expected_result = "20210621"
+        expected_result = "20210622"
 
         # Act
         result = Helper.format_today()

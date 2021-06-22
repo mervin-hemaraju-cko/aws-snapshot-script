@@ -1,10 +1,5 @@
-import requests
-import json
+import requests, json, os, sys, traceback, getopt
 import boto3
-import os
-import sys
-import getopt
-import traceback
 import utils.helper as Helper
 import utils.logger as Logger
 import utils.constants as Const
@@ -13,6 +8,8 @@ from models.instance import Instance
 from models.snapshot import SnapshotRequest
 from freshtasks.api import Api
 from freshtasks.task_utils import TaskUtils
+from freshtasks.utils.helper import ticket_extract
+from freshtasks.utils.constants import ticket_dict
 
 ######################################
 ########## Global Variables ##########
@@ -24,108 +21,21 @@ error = None
 ######################################
 ############ My Functions ############
 ######################################
-def retrieve_arguments(argv):
 
-    ticket = None
 
-    # Try to get values from option arguments
-    opts, _ = getopt.getopt(argv, "ht:", ["ticket="])
+###### -> BOTO3
 
-    # If no options passed, raise an error
-    if len(opts) < 1:
-        raise getopt.GetoptError(Const.EXCEPTION_OPTIONS_WRONG_ARGUMENTS)
+def wait_for_snapshots_completion(client, snapshots_ids):
 
-    # Iterate though each options
-    for opt, arg in opts:
+    waiter = client.get_waiter('snapshot_completed')
 
-        # If option help asked
-        if opt == '-h':
-            print(Const.EXCEPTION_OPTIONS_HELP)
-            sys.exit()
-        # If option ticket passed
-        elif opt in ("-t", "--ticket"):
-            ticket = arg
-
-    # Both tickets and agent should be set
-    # If one of them is missing, raise an error
-    if ticket == None or ticket == "":
-        raise getopt.GetoptError(Const.EXCEPTION_OPTIONS_MISSING_ARGUMENTS)
-
-    return ticket
-
-def logger_config():
-    # Call the global logger variable
-    global logger
-
-    # log folder path
-    LOG_FOLDER = os.path.join(os.path.dirname(__file__), "logs/")
-
-    # create log folder
-    if os.path.exists(LOG_FOLDER) is False:
-        os.mkdir(LOG_FOLDER)
-
-    # Assign to logger variable
-    logger = Logger.create_logger(
-        (LOG_FOLDER + datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + ".log")
+    waiter.wait(
+        SnapshotIds = snapshots_ids,
+        WaiterConfig={
+            'Delay': 15,
+            'MaxAttempts': 40
+        }
     )
-
-def load_open_tasks(ticket):
-    # Make API call to Fresh Tasks
-    api = Api(
-        os.environ['ENV_FRESH_SERVICE_KEY_API_B64'], 
-        os.environ["ENV_VALUE_DOMAIN_FRESHSERVICE_CKO"]
-    )
-
-    # Get the list of tasks
-    tasks = api.load_tasks(ticket)
-
-    # Get Open tasks only
-    task_utils = TaskUtils(tasks).get_open()
-    
-    return task_utils, api
-
-def close_tasks(api, tasks, ticket):
-    
-    for task in tasks:
-        api.close_task(ticket, task.id)
-
-def filter_host_ips(tasks):
-    # Retrieve valid ip address from tasks
-    host_ip_addresses = Helper.retrieve_hosts(tasks)
-
-    # Check if ip list is not empty
-    if not host_ip_addresses:
-        raise IndexError(Const.EXCEPTION_SNAPSHOT_UNDEFINED)
-
-    return host_ip_addresses
-
-def create_ec2_client():
-
-    # Instantiate BOTO client for EC2
-    ec2 = boto3.client('ec2')
-
-    # Return the client
-    return ec2
-
-def query_instance(client, host):
-    
-    if Helper.is_an_ip_address(host):
-        filters = [Const.require_filter_template_ip(host)]
-    else:
-        filters = [Const.require_filter_template_hostname(host)]
-
-    response = client.describe_instances(Filters=filters)
-
-    # Retrieve instances
-    for r in response['Reservations']:
-
-        for i in r['Instances']:
-
-            return Instance.load(i)
-
-    # Raise exception if an instance not found
-    raise Exception(Const.EXCEPTION_NOT_FOUND_INSTANCE.format(
-        filters[0]['Values'][0]))
 
 def create_snapshots(client, snapshot_requests):
 
@@ -162,17 +72,145 @@ def create_snapshots(client, snapshot_requests):
     # Return snapshot ids
     return ids, messages
 
-def wait_for_snapshots_completion(client, snapshots_ids):
+def create_ec2_client():
 
-    waiter = client.get_waiter('snapshot_completed')
+    # Instantiate BOTO client for EC2
+    ec2 = boto3.client('ec2')
 
-    waiter.wait(
-        SnapshotIds = snapshots_ids,
-        WaiterConfig={
-            'Delay': 15,
-            'MaxAttempts': 40
-        }
+    # Return the client
+    return ec2
+
+def query_instance(client, host):
+    
+    if Helper.is_an_ip_address(host):
+        filters = [Const.require_filter_template_ip(host)]
+    else:
+        filters = [Const.require_filter_template_hostname(host)]
+
+    response = client.describe_instances(Filters=filters)
+
+    # Retrieve instances
+    for r in response['Reservations']:
+
+        for i in r['Instances']:
+
+            return Instance.load(i)
+
+    # Raise exception if an instance not found
+    raise Exception(Const.EXCEPTION_NOT_FOUND_INSTANCE.format(
+        filters[0]['Values'][0]))
+
+
+###### -> Fresh Service
+
+def load_open_tasks(ticket):
+    # Make API call to Fresh Tasks
+    api = Api(
+        os.environ['ENV_FRESH_SERVICE_KEY_API_B64'], 
+        os.environ["ENV_VALUE_DOMAIN_FRESHSERVICE_CKO"]
     )
+
+    # Get the list of tasks
+    tasks = api.load_tasks(ticket)
+
+    # Get Open tasks only
+    task_utils = TaskUtils(tasks).get_open()
+    
+    return task_utils, api
+
+def close_tasks(api, tasks, ticket):
+    
+    for task in tasks:
+        api.close_task(ticket, task.id)
+
+def add_note_on_ticket(ticket, note):
+
+    ticket_type, ticket_number = ticket_extract(ticket)
+
+    fresh_service_url = Const.VALUE_URL_BASE_FRESH_SERVICE_NOTES.format(
+        os.environ["ENV_VALUE_DOMAIN_FRESHSERVICE_CKO"],
+        ticket_dict.get(ticket_type),
+        ticket_number
+    )
+
+    response = requests.post(
+            fresh_service_url, 
+            headers=Const.require_headers_template(os.environ['ENV_FRESH_SERVICE_KEY_API_B64']), 
+            data=json.dumps(Const.require_payload_fs_note(note))
+        )
+
+    # Checks if update is successfull
+    if response.status_code != 201:
+        raise requests.exceptions.HTTPError(Const.EXCEPTION_MESSAGE_ERROR_FRESHSERVICE_NOTE)
+
+
+###### -> Logger
+
+def logger_config():
+    # Call the global logger variable
+    global logger
+
+    # log folder path
+    LOG_FOLDER = os.path.join(os.path.dirname(__file__), "logs/")
+
+    # create log folder
+    if os.path.exists(LOG_FOLDER) is False:
+        os.mkdir(LOG_FOLDER)
+
+    # Assign to logger variable
+    logger = Logger.create_logger(
+        (LOG_FOLDER + datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + ".log")
+    )
+
+def log(message):
+    # Logs an info message
+    logger.info(message)
+
+def debug(message):
+    # Logs a debug message
+    logger.debug(message)
+
+
+###### -> Others
+
+def retrieve_arguments(argv):
+
+    ticket = None
+
+    # Try to get values from option arguments
+    opts, _ = getopt.getopt(argv, "ht:", ["ticket="])
+
+    # If no options passed, raise an error
+    if len(opts) < 1:
+        raise getopt.GetoptError(Const.EXCEPTION_OPTIONS_WRONG_ARGUMENTS)
+
+    # Iterate though each options
+    for opt, arg in opts:
+
+        # If option help asked
+        if opt == '-h':
+            print(Const.EXCEPTION_OPTIONS_HELP)
+            sys.exit()
+        # If option ticket passed
+        elif opt in ("-t", "--ticket"):
+            ticket = arg
+
+    # Both tickets and agent should be set
+    # If one of them is missing, raise an error
+    if ticket == None or ticket == "":
+        raise getopt.GetoptError(Const.EXCEPTION_OPTIONS_MISSING_ARGUMENTS)
+
+    return ticket
+
+def filter_host_ips(tasks):
+    # Retrieve valid ip address from tasks
+    host_ip_addresses = Helper.retrieve_hosts(tasks)
+
+    # Check if ip list is not empty
+    if not host_ip_addresses:
+        raise IndexError(Const.EXCEPTION_SNAPSHOT_UNDEFINED)
+
+    return host_ip_addresses
 
 def post_to_slack(message, blocks=None):
 
@@ -190,14 +228,16 @@ def post_to_slack(message, blocks=None):
     if response['ok'] != True:
         raise Exception(Const.EXCEPTION_MESSAGE_ERROR_SLACK)
 
-def log(message):
-    # Logs an info message
-    logger.info(message)
+def results_broadcast(ticket, results):
 
-def debug(message):
-    # Logs a debug message
-    logger.debug(message)
+    # Define final results message
+    final_results = Helper.construct_results_message(results, Const.MESSAGE_SNAPSHOT_NEW.format(ticket))
 
+    # Post on Slack
+    post_to_slack(final_results)
+
+    # Post on ticket
+    add_note_on_ticket(ticket, final_results)
 
 #####################################
 ########### Main Function ###########
@@ -266,8 +306,8 @@ def main(argv):
         # Close tasks 
         close_tasks(api, tasks, ticket)
 
-        # Notify on Slack
-        post_to_slack(Helper.construct_results_message(results, Const.MESSAGE_SNAPSHOT_NEW.format(ticket)))
+        # Post messages on different platform
+        results_broadcast(ticket, results)
         
         # Wait for Snapshot creation to be completed
         wait_for_snapshots_completion(client, snap_ids)

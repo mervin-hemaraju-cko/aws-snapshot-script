@@ -3,7 +3,7 @@
 ###############################################################
 
 # VALUES
-VALUE_URL_BASE_FRESH_SERVICE_TASKS = "{}/changes/{}/tasks"
+VALUE_URL_BASE_FRESH_SERVICE_NOTES = "https://{}/api/v2/{}/{}/notes"
 
 # MESSAGE
 MESSAGE_SNAPSHOT_CREATED = "The snapshot for {} has been created under {}"
@@ -21,6 +21,7 @@ EXCEPTION_TIMEOUT = "Request timeout occured: {}"
 EXCEPTION_HTTP_ERROR = "HTTP error occured: {}"
 EXCEPTION_GENERAL = "An unexpected error occurred: {}"
 EXCEPTION_MESSAGE_ERROR_SLACK = "Message could not be posted to Slack channel"
+EXCEPTION_MESSAGE_ERROR_FRESHSERVICE_NOTE = "Your Fresh Service note couldn't be posted."
 EXCEPTION_OPTIONS_GENERAL = "{}. Use option -h for help"
 EXCEPTION_OPTIONS_MISSING_ARGUMENTS = "Missing arguments"
 EXCEPTION_OPTIONS_WRONG_ARGUMENTS = "Wrong arguments passed"
@@ -30,6 +31,15 @@ EXCEPTION_NON_USER_EXECUTION = "Please run this script in a non-root user."
 EXCEPTION_SNAPSHOT_UNDEFINED = "No snapshots defined for this ticket. Please verify the format again."
 
 # Dictionary values
+
+# List of possible ticket ops
+ticket_dict = {
+        "#SR" : "tickets",
+        "#INC": "tickets",
+        "#CHN": "changes",
+        "#PRB": "problems"
+    }
+
 def require_filter_template_ip(ip_address):
     return {
         'Name': 'private-ip-address',
@@ -73,3 +83,8 @@ def require_tags_spec_template(tags):
             'Tags': tags
         },
     ]
+
+def require_payload_fs_note(message):
+    return {
+        "body": message
+    }

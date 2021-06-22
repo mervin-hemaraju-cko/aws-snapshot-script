@@ -1,6 +1,7 @@
-import pytest
-import requests
+import json, pytest, os
 import main as Main
+from freshtasks.api import Api
+from freshtasks.task import Task
 
 ###############################
 ####### Important Note ########
@@ -10,7 +11,7 @@ import main as Main
 ###############################
 ###############################
 
-class TestHelper:
+class TestMain:
 
     # Uncomment this test for the Slack posting
     # def test_post_to_slack(self):
@@ -26,9 +27,69 @@ class TestHelper:
             
     #     # Assert
     #     assert result == True
+
+    def test_close_task_NormalData(self):
+        # Arrange
+        api = Api(
+            os.environ['ENV_FRESH_SERVICE_KEY_API_B64'], 
+            os.environ["ENV_VALUE_DOMAIN_FRESHSERVICE_CKO"]
+        )
+        ticket = "#CHN-1"
+        tasks = []
+        expected_result = True
+
+        # Act
+        try:
+            # Load test file
+            with open("tests/test_data/data_tasks_close.json") as json_out:
+
+                for json_obj in json.load(json_out):
+                    task = Task(json_obj)
+                    tasks.append(task)
+
+            Main.close_tasks(api, tasks, ticket)
+            
+            result = True
+        except:
+            result = False
+
+        # Assert
+        assert expected_result == result
+
+    def test_add_note_on_ticket_NormalData(self):
+
+        # Arrange
+        ticket = "#CHN-1"
+        message = "This is a message from python unit test"
+
+        # Act
+        Main.add_note_on_ticket(ticket, message)
+
+        # Assert
+        assert True
+    
+    def test_add_note_on_ticket_AbnormalData(self):
+
+        # Arrange
+        ticket = "#CHN-0"
+        message = "This is a message from python unit test"
+        expected_result = "Your Fresh Service note couldn't be posted."
+
+        # Act
+        try:
+            Main.add_note_on_ticket(ticket, message)
+            result = "FAILED"
+
+        except Exception as e:
+            result = str(e)
+
+        # Assert
+        assert expected_result == result
+
+
     testdata = [
-        ("#CHN-1", 2),
-        ("CHN-1", 2),
+        ("#CHN-1", 1),
+        ("CHN-1", 1),
         ("#CHN-2", 0),
         ("CHN-2", 0),
     ]
@@ -36,7 +97,7 @@ class TestHelper:
     def test_get_tasks_NormalData(self,ticket, expected_result):
 
         # Act
-        result = Main.load_open_tasks(ticket)
+        result, _ = Main.load_open_tasks(ticket)
 
         # Assert
         assert expected_result == len(result)
@@ -66,7 +127,7 @@ class TestHelper:
         expected_result = []
 
         # Act
-        result = Main.load_open_tasks(ticket)
+        result, _ = Main.load_open_tasks(ticket)
 
         # Assert
         assert expected_result == result
@@ -77,7 +138,8 @@ class TestHelper:
         expected_size = 2
 
         # Act
-        tasks = Main.load_open_tasks(ticket)
+        tasks, _ = Main.load_open_tasks(ticket)
+
         result = Main.filter_host_ips(tasks)
 
         # Assert
@@ -90,7 +152,7 @@ class TestHelper:
 
         # Act
         try:
-            tasks = Main.load_open_tasks(ticket)
+            tasks, _ = Main.load_open_tasks(ticket)
             result = Main.filter_host_ips(tasks)
         except IndexError as e:
             result = str(e)
@@ -171,20 +233,32 @@ class TestHelper:
         assert expected_volume_id == result.root_volume_id
         assert expected_volume_name == result.root_volume_name
 
-    def test_query_instance_AbnormalData(self):
+    def test_query_instance_AbnormalData1Of2(self):
 
-        # Arrange
-        filters = [{
-                'Name': 'private-ip-address',
-                'Values': ["10.10.10.10"],
-            }]
-
+        # Arrange        
+        host = "10.10.10.10"
         expected_result = "No instance found for the IP address 10.10.10.10"
 
         # Act
         try:
             client = Main.create_ec2_client()
-            result = Main.query_instance(client, filters)
+            result = Main.query_instance(client, host)
+        except Exception as e:
+            result = str(e)
+            
+        # Assert
+        assert expected_result == result
+    
+    def test_query_instance_AbnormalData2Of2(self):
+
+        # Arrange        
+        host = "unknown"
+        expected_result = "No instance found for the IP address unknown"
+
+        # Act
+        try:
+            client = Main.create_ec2_client()
+            result = Main.query_instance(client, host)
         except Exception as e:
             result = str(e)
             
