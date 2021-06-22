@@ -39,11 +39,20 @@ def format_today():
     return today.strftime("%Y%m%d")
 
 # Message construct
-# Construct a message with different lines
-def construct_results_message(results, header):
+# Construct a message with different lines to send on Slack
+def construct_results_slack(results, header):
 
     for result in results:
         header += f"{result}\n"
+
+    return header
+
+# Message construct
+# Construct a message with different lines to send on Ticket
+def construct_results_fsnote(results, header):
+
+    for result in results:
+        header += f"<div>{result}</div>"
 
     return header
 

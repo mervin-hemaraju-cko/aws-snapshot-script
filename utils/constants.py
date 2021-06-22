@@ -7,7 +7,8 @@ VALUE_URL_BASE_FRESH_SERVICE_NOTES = "https://{}/api/v2/{}/{}/notes"
 
 # MESSAGE
 MESSAGE_SNAPSHOT_CREATED = "The snapshot for {} has been created under {}"
-MESSAGE_SNAPSHOT_NEW = "A new snapshot request has been created for {}:\n"
+MESSAGE_SNAPSHOT_NEW_SLACK = "A new snapshot request has started for {}:\n"
+MESSAGE_SNAPSHOT_NEW_FSNOTE = "Snapshot request started for the below IDs: <br/>"
 MESSAGE_SNAPSHOT_COMPLETED = "Snapshot creation completed for ticket {}"
 MESSAGE_SNAPSHOT_CANCELLED = "Request for ticket {} has been cancelled due to the following errors:\n"
 MESSAGE_USER_SCRIPT_LAUNCH = "The user {} has executed the script."

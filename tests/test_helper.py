@@ -37,12 +37,28 @@ class TestHelper:
         ([],'''Your message is: '''),
     ]
     @pytest.mark.parametrize("test_data,expected_result", testdata)
-    def test_construct_results_message(self,test_data,expected_result):
+    def test_construct_results_message_slack(self,test_data,expected_result):
         # Arrange
         header = "Your message is: "
 
         # Act
-        result = Helper.construct_results_message(test_data, header)
+        result = Helper.construct_results_slack(test_data, header)
+
+        # Assert
+        assert result == expected_result
+
+    testdata = [
+        (["ms1", "ms2", "ms3"],'''Your message is: <div>ms1</div><div>ms2</div><div>ms3</div>'''),
+        (["this is a ms1"],'''Your message is: <div>this is a ms1</div>'''),
+        ([],'''Your message is: '''),
+    ]
+    @pytest.mark.parametrize("test_data,expected_result", testdata)
+    def test_construct_results_message_fsnote(self,test_data,expected_result):
+        # Arrange
+        header = "Your message is: "
+
+        # Act
+        result = Helper.construct_results_fsnote(test_data, header)
 
         # Assert
         assert result == expected_result

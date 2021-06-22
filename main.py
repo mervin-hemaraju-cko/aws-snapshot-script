@@ -231,13 +231,14 @@ def post_to_slack(message, blocks=None):
 def results_broadcast(ticket, results):
 
     # Define final results message
-    final_results = Helper.construct_results_message(results, Const.MESSAGE_SNAPSHOT_NEW.format(ticket))
+    final_results_slack = Helper.construct_results_slack(results, Const.MESSAGE_SNAPSHOT_NEW_SLACK.format(ticket))
+    final_results_fsnote = Helper.construct_results_fsnote(results, Const.MESSAGE_SNAPSHOT_NEW_FSNOTE)
 
     # Post on Slack
-    post_to_slack(final_results)
+    post_to_slack(final_results_slack)
 
     # Post on ticket
-    add_note_on_ticket(ticket, final_results)
+    add_note_on_ticket(ticket, final_results_fsnote)
 
 #####################################
 ########### Main Function ###########
@@ -342,7 +343,7 @@ def main(argv):
     # A separate try except to post message to slack
     try:
         if error != None:
-            post_to_slack(Helper.construct_results_message([error], Const.MESSAGE_SNAPSHOT_CANCELLED.format(ticket)))
+            post_to_slack(Helper.construct_results_slack([error], Const.MESSAGE_SNAPSHOT_CANCELLED.format(ticket)))
     except Exception as e:
         error = Const.EXCEPTION_GENERAL.format(e)
         debug(error)
