@@ -45,6 +45,8 @@ This document can be decoupled into 3 main parts:
 4.  The script will provide you the snapshot id(s) on Slack upon creation.
     
 5.  The script only takes root volume snapshots.
+
+6.  The script will close the Fresh Service task after successful completion.
     
 <br/>
 
@@ -83,7 +85,7 @@ There are a set of instructions to **strictly** follow to run the script correct
     
 2.  A list of tasks should be defined in Fresh Service in the following syntax (A screenshot has been inserted below):
     
-    *   Only tasks with the title of **snap:instance\_ip** will take snapshots. Here **instance\_ip** is the IP address of the instance on AWS
+    *   Only tasks with the title of **snapshot(s)** will be taken into considerations. In the description of the task, list all your instances either by **instance name** or **IP number** separated by a **semi-column**:
         
 ![Task Format](./screenshots/task_format.png)
 
