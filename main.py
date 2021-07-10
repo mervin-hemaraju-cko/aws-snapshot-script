@@ -219,9 +219,9 @@ def post_to_slack(message, blocks=None):
         'token': os.environ["ENV_SLACK_KEY_API"],
         'channel': os.environ["ENV_SLACK_CHANNEL"],
         'text': message,
-        'icon_url': "",
         'username': os.environ["ENV_SLACK_USERNAME"],
-        'blocks': json.dumps(blocks) if blocks else None
+        'blocks': json.dumps(blocks) if blocks else None,
+        'as_user': True
     }).json()
 
     # Check if messages posted successfully
@@ -266,6 +266,9 @@ def main(argv):
         # ticket = os.environ['ENV_APP_TICKET']
         # agent = os.environ['ENV_APP_AGENT']
 
+        # Notify script started
+        post_to_slack(Const.MESSAGE_SNAPSHOT_LAUNCHED.format(ticket))
+        
         # Log user execution
         log(Const.MESSAGE_USER_SCRIPT_LAUNCH.format(agent))
 
