@@ -1,9 +1,7 @@
-import requests, json, os, sys, traceback, getopt
+import requests, json, os, sys, getopt
 import boto3
 import utils.helper as Helper
-import utils.logger as Logger
 import utils.constants as Const
-from datetime import datetime
 from models.instance import Instance
 from models.snapshot import SnapshotRequest
 from freshtasks.api import Api
@@ -11,10 +9,14 @@ from freshtasks.task_utils import TaskUtils
 from freshtasks.utils.helper import ticket_extract
 from freshtasks.utils.constants import ticket_dict
 
+
+#TODO("Add Throttle for multiple instance querying")
+#TODO("Implement Advanced Slack Notifications")
+#FIXME("Snapshot Tags not Working")
+
 ######################################
 ########## Global Variables ##########
 ######################################
-logger = None
 error = None
 
 
@@ -57,10 +59,6 @@ def create_snapshots(client, snapshot_requests):
             VolumeId=sr.volume_id,
             TagSpecifications=Const.require_tags_spec_template(tags)
         )
-
-        # Log the message
-        log(Const.MESSAGE_SNAPSHOT_CREATED.format(
-            sr.hostname, response['SnapshotId']))
 
         # Add id to list
         ids.append(response['SnapshotId'])
@@ -144,33 +142,6 @@ def add_note_on_ticket(ticket, note):
         raise requests.exceptions.HTTPError(Const.EXCEPTION_MESSAGE_ERROR_FRESHSERVICE_NOTE)
 
 
-###### -> Logger
-
-def logger_config():
-    # Call the global logger variable
-    global logger
-
-    # log folder path
-    LOG_FOLDER = os.path.join(os.path.dirname(__file__), "logs/")
-
-    # create log folder
-    if os.path.exists(LOG_FOLDER) is False:
-        os.mkdir(LOG_FOLDER)
-
-    # Assign to logger variable
-    logger = Logger.create_logger(
-        (LOG_FOLDER + datetime.now().strftime("%Y-%m-%d--%H-%M-%S") + ".log")
-    )
-
-def log(message):
-    # Logs an info message
-    logger.info(message)
-
-def debug(message):
-    # Logs a debug message
-    logger.debug(message)
-
-
 ###### -> Others
 
 def retrieve_arguments(argv):
@@ -246,21 +217,21 @@ def results_broadcast(ticket, results):
 
 def main(argv):
     # Call the global variables
-    global logger, error
+    global error
 
     # Try except clause to
     # handle all possible errors in the whole script
     # to prevent crash
     try:
-        # Initiate Logger
-        logger_config()
 
         # Retrieve ticket number
         # from command line option arguments
         ticket = retrieve_arguments(argv)
 
         # Retrive Username as Agent
-        agent = Helper.get_username()        
+        agent = "mervin.hemaraju@checkout.com"
+        # Use for other use cases
+        #agent = Helper.get_username()        
 
         # Uncomment only for fast debugging purposes
         # ticket = os.environ['ENV_APP_TICKET']
@@ -268,9 +239,6 @@ def main(argv):
 
         # Notify script started
         post_to_slack(Const.MESSAGE_SNAPSHOT_LAUNCHED.format(ticket))
-        
-        # Log user execution
-        log(Const.MESSAGE_USER_SCRIPT_LAUNCH.format(agent))
 
         # Get the list of tasks from FreshService
         tasks, api = load_open_tasks(ticket)
@@ -324,24 +292,20 @@ def main(argv):
     # unknown exceptions
     except getopt.GetoptError as GE:
         error = Const.EXCEPTION_OPTIONS_GENERAL.format(GE)
-        log(error)
-        debug(traceback.format_exc())
+        print(error)
         sys.exit(2)
 
     except requests.exceptions.Timeout as TE:
         error = Const.EXCEPTION_TIMEOUT.format(TE)
-        debug(error)
-        debug(traceback.format_exc())
+        print(error)
 
     except requests.exceptions.HTTPError as HE:
         error = Const.EXCEPTION_HTTP_ERROR.format(HE)
-        debug(error)
-        debug(traceback.format_exc())
+        print(error)
 
     except Exception as e:
         error = Const.EXCEPTION_GENERAL.format(e)
-        debug(error)
-        debug(traceback.format_exc())
+        print(error)
 
     # A separate try except to post message to slack
     try:
@@ -349,9 +313,5 @@ def main(argv):
             post_to_slack(Helper.construct_results_slack([error], Const.MESSAGE_SNAPSHOT_CANCELLED.format(ticket)))
     except Exception as e:
         error = Const.EXCEPTION_GENERAL.format(e)
-        debug(error)
-        debug(traceback.format_exc())
+        print(error)
 
-
-if __name__ == "__main__":
-    main(sys.argv[1:])

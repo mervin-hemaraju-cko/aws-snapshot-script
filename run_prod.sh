@@ -1,4 +1,4 @@
 #!/bin/bash
 
-source secret_dev.env
+source secret_prod.env
 python run.py -t $TICKET
